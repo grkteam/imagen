@@ -1,0 +1,13 @@
+[build-system]
+requires = [
+	"setuptools>=67.8",
+]
+
+[project]
+name = "imagen"
+description = "Postcard-like image generation from textual posts and pics"
+requires-python = ">=3.8"
+dynamic = ["version"]
+dependencies = [
+	"pillow>=10.3.0",
+]
