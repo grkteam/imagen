@@ -1,4 +1,22 @@
 class Element:
+    """Common ancestor for all elements, useless on its own.
+
+    color : str (color name: 'blue' or hex string '#ffddcc')
+        Color of text or line
+
+    align : str ('center'|'left'|'right')
+        Horizontal alignment
+
+    valign : str ('top'|'bottom'|'center')
+        Vertical alignment.
+        Note: only one element can have valign=='center'
+
+    hmargin : int (pixels)
+        Horizontal margin: left and right
+
+    vmargin : int (pixels)
+        Top margin if valign=='top', bottom margin if valign=='bottom'
+    """
     def __init__(self, color='black', align='center', valign='top',
                  hmargin=10, vmargin=10):
         assert align in {'left', 'right', 'center'}
@@ -27,15 +45,6 @@ class Textline(Element):
         self.underline_thickness = underline_thickness
 
 
-class HLine(Element):
-    def __init__(self, length=100, thickness=2, **kwargs):
-        Element.__init__(self, **kwargs)
-        assert isinstance(length, int) and length > 0
-        assert isinstance(thickness, int) and thickness > 0
-        self.length = length
-        self.thickness = thickness
-
-
 class MultilineQuote(Element):
     def __init__(self, text=None, font=None, chars_per_line=40,
                  line_spacing_px=0, **kwargs):
@@ -45,3 +54,12 @@ class MultilineQuote(Element):
         self.font = font
         self.chars_per_line = chars_per_line
         self.line_spacing_px = line_spacing_px
+
+
+class HLine(Element):
+    def __init__(self, length=100, thickness=2, **kwargs):
+        Element.__init__(self, **kwargs)
+        assert isinstance(length, int) and length > 0
+        assert isinstance(thickness, int) and thickness > 0
+        self.length = length
+        self.thickness = thickness

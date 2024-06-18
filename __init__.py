@@ -12,7 +12,6 @@ from .elements import (
     HLine,
 )
 
-
 WIDTH = 1528
 HEIGHT = 800
 MIN_WSPACE = 100
@@ -30,85 +29,20 @@ char_replacement = {
 }
 
 
-def _cleanup_chars(s):
-    for bad, good in char_replacement.items():
-        s = s.replace(bad, good)
-    return s
-
-
-def _select_pic(pics_dir=None, filename=None, selection_key=None):
-    if filename is None and selection_key is None:
-        # select random pic in 'pics' dir
-        try:
-            pics = os.listdir(pics_dir)
-            pic_filename = random.choice(pics)
-        except (FileNotFoundError, IndexError):
-            return None
-    elif filename is not None:
-        pic_filename = filename
-    else:  # selection_key is not None
-        try:
-            key_ascii = selection_key.encode('ascii', errors='ignore')
-            int_hash = int(sha1(key_ascii).hexdigest(), 16)
-            pics = os.listdir(pics_dir)
-            i = int_hash % len(pics)
-            pic_filename = pics[i]
-        except (FileNotFoundError, IndexError):
-            return None
-    path = f'{pics_dir}/{pic_filename}'
-    if not os.path.isfile(path):
-        return None
-    return path
-
-
-def _scale_and_paste_pic(path=None, img=None, pic_position='left'):
-    assert os.path.isfile(path) is True
-    assert isinstance(img, PIL.Image.Image)
-    pic = Image.open(path)
-    w, h = pic.size
-    W, H = img.size
-    # resize pic to height H ---
-    factor = H / h
-    Wpic = int(w * factor)
-    pic_scaled = pic.resize((Wpic, H))
-    # paste pic onto img ---
-    if pic_position == 'left':
-        Xpic = 0
-    else:
-        Xpic = W - Wpic
-    img.paste(pic_scaled, (Xpic, 0))
-    return Wpic
-
-
-def _validate_elements(elements):
-    assert all(map(lambda x: isinstance(x, Element), elements))
-    # only one element can have valign='center'
-    centered = []
-    for i, e in enumerate(elements):
-        if e.valign == 'center':
-            centered.append(elements.pop(i))
-    if len(centered) > 1:
-        raise ValueError('Cannot vertically align more than 1 element')
-    # put the vertically centered element at the end:
-    # (need to know the available space after all other elements
-    #  are positioned)
-    elements = elements + centered
-    return elements
-
-
-def generate_image(
-        elements=[], width=WIDTH, height=HEIGHT, bg=BG,
-        pic_filename=None, pic_selection_key=None, pic_position='left'):
+def generate_image(elements=[], width=WIDTH, height=HEIGHT, bg=BG,
+                   pic_filename=None, pic_selection_key=None, pic_position=None):
     elements = _validate_elements(elements)
-    assert pic_position in {'left', 'right'}
-    assert isinstance(pic_selection_key, str)
+    assert pic_position in {'left', 'right', None}
     W, H = width, height
     img = Image.new('RGB', (W, H), bg)
 
     # Scale and position pic onto image ===
-    pic_path = _select_pic(pics_dir=PICS_DIR,
-                           filename=pic_filename,
-                           selection_key=pic_selection_key)
+    if pic_position:
+        pic_path = _select_pic(pics_dir=PICS_DIR,
+                               filename=pic_filename,
+                               selection_key=pic_selection_key)
+    else:
+        pic_path = None
     if pic_path is None:
         Wpic = 0
     else:
@@ -150,23 +84,23 @@ def generate_image(
             if e.valign == 'top':
                 y = Y0 + e.vmargin
             elif e.valign == 'bottom':
-                y = Y1 - e.vmargin
+                y = Y1 - e.vmargin - h
             elif e.valign == 'center':
                 y = int((Y0 + Y1)/2 - h/2)
 
             # write text
             draw.text((x, y), e.text, font=font, fill=e.color)
             if e.underline:
-                xy0 = (x, y)
-                xy1 = (x + w, y)
+                xy0 = (x, y+h)
+                xy1 = (x+w, y+h)
                 draw.line((xy0, xy1), width=e.underline_thickness,
                           fill=e.color)
 
             # update Y0, Y1
             if e.valign == 'top':
-                Y0 += h + 2*e.vmargin
+                Y0 += h + e.vmargin
             elif e.valign == 'bottom':
-                Y1 -= h + 2*e.vmargin
+                Y1 -= h + e.vmargin
             else:
                 # center valign => last element => no need to adjust
                 assert i == len(elements) - 1
@@ -250,11 +184,78 @@ def generate_image(
 
             # update Y0, Y1
             if e.valign == 'top':
-                Y0 += 2*e.vmargin + e.thickness
+                Y0 += e.vmargin + e.thickness
             elif e.valign == 'bottom':
-                Y1 -= 2*e.vmargin + e.thickness
+                Y1 -= e.vmargin + e.thickness
             elif e.valign == 'center':
                 # center valign => last element => no need to adjust
                 assert i == len(elements) - 1
 
     return img
+
+
+def _cleanup_chars(s):
+    for bad, good in char_replacement.items():
+        s = s.replace(bad, good)
+    return s
+
+
+def _select_pic(pics_dir=None, filename=None, selection_key=None):
+    if filename is None and selection_key is None:
+        # select random pic in 'pics' dir
+        try:
+            pics = os.listdir(pics_dir)
+            pic_filename = random.choice(pics)
+        except (FileNotFoundError, IndexError):
+            return None
+    elif filename is not None:
+        pic_filename = filename
+    else:  # selection_key is not None
+        try:
+            key_ascii = selection_key.encode('ascii', errors='ignore')
+            int_hash = int(sha1(key_ascii).hexdigest(), 16)
+            pics = os.listdir(pics_dir)
+            i = int_hash % len(pics)
+            pic_filename = pics[i]
+        except (FileNotFoundError, IndexError):
+            return None
+    path = f'{pics_dir}/{pic_filename}'
+    if not os.path.isfile(path):
+        return None
+    return path
+
+
+def _scale_and_paste_pic(path=None, img=None, pic_position='left'):
+    assert pic_position in {'left', 'right'}
+    assert os.path.isfile(path) is True
+    assert isinstance(img, PIL.Image.Image)
+    pic = Image.open(path)
+    w, h = pic.size
+    W, H = img.size
+    # resize pic to height H ---
+    factor = H / h
+    Wpic = int(w * factor)
+    pic_scaled = pic.resize((Wpic, H))
+    # paste pic onto img ---
+    if pic_position == 'left':
+        Xpic = 0
+    else:
+        Xpic = W - Wpic
+    img.paste(pic_scaled, (Xpic, 0))
+    return Wpic
+
+
+def _validate_elements(elements):
+    assert all(map(lambda x: isinstance(x, Element), elements))
+    # only one element can have valign='center'
+    centered = []
+    for i, e in enumerate(elements):
+        if e.valign == 'center':
+            centered.append(elements.pop(i))
+    if len(centered) > 1:
+        raise ValueError('Cannot vertically align more than 1 element')
+    # put the vertically centered element at the end:
+    # (need to know the available space after all other elements
+    #  are positioned)
+    elements = elements + centered
+    return elements
