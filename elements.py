@@ -7,9 +7,9 @@ class Element:
     align : str ('center'|'left'|'right')
         Horizontal alignment
 
-    valign : str ('top'|'bottom'|'center')
+    valign : str ('top'|'bottom'|'middle')
         Vertical alignment.
-        Note: only one element can have valign=='center'
+        Note: only one element can have valign=='middle'
 
     hmargin : int (pixels)
         Horizontal margin: left and right
@@ -20,7 +20,7 @@ class Element:
     def __init__(self, color='black', align='center', valign='top',
                  hmargin=10, vmargin=10):
         assert align in {'left', 'right', 'center'}
-        assert valign in {'top', 'bottom', 'center'}
+        assert valign in {'top', 'bottom', 'middle'}
         assert isinstance(hmargin, int)
         assert isinstance(vmargin, int)
         self.color = color
