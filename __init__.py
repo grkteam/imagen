@@ -30,7 +30,8 @@ char_replacement = {
 
 
 def generate_image(elements=[], width=WIDTH, height=HEIGHT, bg=BG,
-                   pic_filename=None, pic_selection_key=None, pic_position=None):
+                   pics_dir=PICS_DIR, pic_filename=None,
+                   pic_selection_key=None, pic_position=None):
     elements = _validate_elements(elements)
     assert pic_position in {'left', 'right', None}
     W, H = width, height
@@ -38,7 +39,7 @@ def generate_image(elements=[], width=WIDTH, height=HEIGHT, bg=BG,
 
     # Scale and position pic onto image ===
     if pic_position:
-        pic_path = _select_pic(pics_dir=PICS_DIR,
+        pic_path = _select_pic(pics_dir=pics_dir,
                                filename=pic_filename,
                                selection_key=pic_selection_key)
     else:
